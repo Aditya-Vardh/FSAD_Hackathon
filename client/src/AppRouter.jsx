@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Landing from './pages/Landing'
 import AuthorDashboard from './pages/author/Dashboard'
 import SubmitPaper from './pages/author/Submit'
 import RevisePaper from './pages/author/Revise'
@@ -17,7 +18,7 @@ import AdminAnalytics from './pages/admin/Analytics'
 function HomeRedirect() {
   const { token, loading, user } = useAuth()
   if (loading) return null
-  if (!token) return <Navigate to="/login" replace />
+  if (!token) return <Landing />
   if (!user?.role) return <Navigate to="/login" replace />
   if (user.role === 'admin') return <Navigate to="/admin/analytics" replace />
   return <Navigate to={`/${user.role}/dashboard`} replace />

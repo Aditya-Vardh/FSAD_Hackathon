@@ -91,7 +91,11 @@ export default function AdminAnalytics() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="status" />
                         <YAxis allowDecimals={false} />
-                        <Tooltip />
+                        <Tooltip 
+                          cursor={{ fill: 'rgba(148, 163, 184, 0.15)' }}
+                          contentStyle={{ backgroundColor: 'var(--app-bg)', borderRadius: '12px', borderColor: 'rgba(148, 163, 184, 0.2)', color: 'var(--app-fg)' }}
+                          itemStyle={{ color: 'var(--app-fg)', fontWeight: 600 }}
+                        />
                         <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                           {data.submissionsByStatusArray.map((entry) => (
                             <Cell key={entry.status} fill={statusColors[entry.status] || '#3b82f6'} />

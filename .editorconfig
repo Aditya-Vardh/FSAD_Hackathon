@@ -1,0 +1,14 @@
+{
+  "models": [
+    {
+      "title": "Local GPT OSS",
+      "provider": "ollama",
+      "model": "gpt-oss:20b"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "Local GPT OSS",
+    "provider": "ollama",
+    "model": "gpt-oss:20b"
+  }
+}

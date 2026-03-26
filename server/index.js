@@ -1,15 +1,15 @@
-require('dotenv').config()
+const path = require('path')
+require('dotenv').config({ path: path.join(__dirname, '.env') })
 
 const express = require('express')
 const cors = require('cors')
-const path = require('path')
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-app.use('/api/auth', require('./routes/auth'))
+app.use("/api/auth", require("./routes/auth"))
 app.use('/api/papers', require('./routes/papers'))
 app.use('/api/submissions', require('./routes/submissions'))
 app.use('/api/reviews', require('./routes/reviews'))

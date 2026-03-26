@@ -20,30 +20,50 @@ export default function EditorDashboard() {
       try {
         const res = await api.get('/api/submissions')
         setItems(res.data)
+        setError('')
       } catch (err) {
         setError(err?.response?.data?.message || 'Failed to load submissions')
       } finally {
         setLoading(false)
       }
     }
-    load()
+
+    if (token) load()
   }, [token])
 
   const filtered = useMemo(() => {
     if (filter === 'all') return items
-    return items.filter((i) => i.status === filter)
+
+    if (filter === 'pending')
+      return items.filter(i => i.paper.status === 'submitted')
+
+    if (filter === 'assigned')
+      return items.filter(i => i.assigned_reviewers?.length)
+
+    if (filter === 'decided')
+      return items.filter(i => ['accepted', 'rejected', 'revision'].includes(i.paper.status))
+
+    return items
   }, [items, filter])
 
   return (
     <div className="min-h-screen">
       <Sidebar />
+
       <main className="md:ml-64 p-4 md:p-8">
+
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-xl md:text-2xl font-semibold text-blue-900">Editor Dashboard</h1>
-            <p className="text-sm text-slate-600 mt-1">Review assignments, scores, and final decisions.</p>
+            <h1 className="text-xl md:text-2xl font-semibold text-blue-900">
+              Editor Dashboard
+            </h1>
+
+            <p className="text-sm text-slate-600 mt-1">
+              Review assignments, scores, and final decisions.
+            </p>
           </div>
         </div>
+
 
         <div className="flex flex-wrap gap-2 mb-4">
           {[
@@ -51,16 +71,15 @@ export default function EditorDashboard() {
             { id: 'pending', label: 'Pending' },
             { id: 'assigned', label: 'Assigned' },
             { id: 'decided', label: 'Decided' }
-          ].map((tab) => (
+          ].map(tab => (
             <button
               key={tab.id}
-              type="button"
               onClick={() => setFilter(tab.id)}
               className={[
                 'rounded-xl border px-3 py-2 text-sm font-medium transition',
                 filter === tab.id
-                  ? 'bg-[#3b82f6] border-[#3b82f6] text-white'
-                  : 'bg-white border-gray-100 text-slate-700 hover:border-[#3b82f6]/40 hover:text-[#1d4ed8]'
+                  ? 'bg-blue-500 text-white border-blue-500'
+                  : 'bg-white border-gray-100 text-slate-700 hover:border-blue-300'
               ].join(' ')}
             >
               {tab.label}
@@ -68,96 +87,116 @@ export default function EditorDashboard() {
           ))}
         </div>
 
-        {error ? <p className="text-red-700 mb-3">{error}</p> : null}
-        {loading ? (
+
+        {error && (
+          <p className="text-red-600 mb-3">{error}</p>
+        )}
+
+
+        {loading && (
           <div className="py-10">
             <Spinner label="Loading submissions..." />
           </div>
-        ) : null}
+        )}
 
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-slate-800">Submissions</h2>
+
+        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+
+          <div className="p-4 border-b">
+            <h2 className="text-sm font-semibold">
+              Submissions
+            </h2>
           </div>
 
+
           <div className="overflow-x-auto">
+
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr className="text-left text-slate-600">
-                  <th className="px-4 py-3 font-semibold">Submission</th>
-                  <th className="px-4 py-3 font-semibold">Title</th>
-                  <th className="px-4 py-3 font-semibold">Author</th>
-                  <th className="px-4 py-3 font-semibold">Assigned reviewer</th>
-                  <th className="px-4 py-3 font-semibold">Paper Status</th>
-                  <th className="px-4 py-3 font-semibold">Submitted</th>
-                  <th className="px-4 py-3 font-semibold">Actions</th>
+
+              <thead className="bg-gray-60">
+                <tr>
+                  <th className="px-4 py-3">Submission</th>
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Author</th>
+                  <th className="px-4 py-3">Assigned reviewer</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Submitted</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
+
+
               <tbody>
-                {filtered.map((row) => (
-                  <tr key={row.submission_id} className="border-t border-gray-100 align-top">
+
+                {filtered.map(row => (
+                  <tr key={row.submission_id} className="border-t">
+
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-slate-900">#{row.submission_id}</div>
-                      <div className="text-xs text-slate-500 mt-1">Submission</div>
+                      #{row.submission_id}
                     </td>
+
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-slate-900">{row.paper.title}</div>
-                      <div className="text-xs text-slate-500 mt-1">{row.paper.keywords || '—'}</div>
+                      {row.paper.title}
                     </td>
+
                     <td className="px-4 py-4">
-                      <div className="text-slate-700">{row.author.name}</div>
+                      {row.author.name}
                     </td>
+
                     <td className="px-4 py-4">
-                      <div className="text-slate-700">
-                        {row.assigned_reviewers?.[0]?.reviewer_name || '—'}
-                      </div>
+                      {row.assigned_reviewers?.[0]?.reviewer_name || '—'}
                     </td>
+
                     <td className="px-4 py-4">
                       <StatusBadge status={row.paper.status} />
                     </td>
+
                     <td className="px-4 py-4">
-                      <div className="text-slate-700">{formatDate(row.submitted_at)}</div>
+                      {formatDate(row.submitted_at)}
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <a
-                          href={`http://localhost:5000/uploads/${row.paper.file_path}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-2 rounded-xl border border-gray-100 hover:border-[#3b82f6]/40 transition text-[#3b82f6] text-sm font-medium bg-white"
-                        >
-                          View PDF
-                        </a>
-                        <Link
-                          to={`/editor/assign/${row.submission_id}`}
-                          className="px-3 py-2 rounded-xl bg-white border border-gray-100 hover:border-[#3b82f6]/40 transition text-[#3b82f6] text-sm font-medium"
-                        >
-                          Assign
-                        </Link>
-                        <Link
-                          to={`/editor/decide/${row.submission_id}`}
-                          className="px-3 py-2 rounded-xl bg-[#3b82f6] text-white hover:bg-[#2563eb] transition text-sm font-medium"
-                        >
-                          Decide
-                        </Link>
-                      </div>
+
+                    <td className="px-4 py-4 flex gap-2">
+
+                      <a
+                        href={`http://localhost:10000/uploads/${row.paper.file_path}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600"
+                      >
+                        View
+                      </a>
+
+                      <Link to={`/editor/assign/${row.submission_id}`}>
+                        Assign
+                      </Link>
+
+                      <Link to={`/editor/decide/${row.submission_id}`}>
+                        Decide
+                      </Link>
+
                     </td>
+
                   </tr>
                 ))}
 
-                {!filtered.length ? (
+
+                {!filtered.length && !loading && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                    <td colSpan={7} className="text-center py-10">
                       No submissions found.
                     </td>
                   </tr>
-                ) : null}
+                )}
+
               </tbody>
+
             </table>
+
           </div>
+
         </div>
+
       </main>
     </div>
   )
 }
-

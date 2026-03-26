@@ -22,6 +22,8 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
+  console.log("JWT_SECRET =", process.env.JWT_SECRET)
+
   const { email, password } = req.body
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email])

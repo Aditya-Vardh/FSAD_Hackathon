@@ -3,6 +3,7 @@ const router = express.Router()
 const db = require('../db')
 const auth = require('../middleware/auth')
 const anonymise = require('../middleware/anonymise')
+const { sendEmail } = require('../utils/mailer')
 
 // Reviewer: get all assigned papers
 router.get('/assigned', auth, async (req, res, next) => {
@@ -166,16 +167,34 @@ router.post('/:submissionId', auth, async (req, res) => {
 
     // Notify editor that a reviewer submitted feedback
     const [submRows] = await db.query(
-      'SELECT editor_id FROM submissions WHERE id = ?',
+      `SELECT s.id, s.editor_id, u.email, u.name, p.title
+       FROM submissions s
+       JOIN users u ON u.id = s.editor_id
+       JOIN papers p ON p.id = s.paper_id
+       WHERE s.id = ?`,
       [submissionId]
     )
 
     if (submRows.length && submRows[0].editor_id) {
+      const editor = submRows[0]
+      // Database notification
       await db.query(
         `INSERT INTO notifications (user_id, message)
-         VALUES (?, 'A reviewer submitted feedback')`,
-        [submRows[0].editor_id]
+         VALUES (?, ?)`,
+        [editor.editor_id, `A reviewer submitted feedback for "${editor.title}"`]
       )
+
+      // Email notification
+      if (editor.email) {
+        await sendEmail({
+          to: editor.email,
+          subject: 'Review Feedback Submitted',
+          text: `Hello ${editor.name},\n\nA reviewer has submitted feedback for the submission "${editor.title}" (ID: #${submissionId}).\n\nYou can view the feedback and make a final decision in the Editor Dashboard.`,
+          html: `<p>Hello <strong>${editor.name}</strong>,</p>
+                 <p>A reviewer has submitted feedback for the submission "<em>${editor.title}</em>" (ID: #${submissionId}).</p>
+                 <p>You can view the feedback and make a final decision in the Editor Dashboard.</p>`
+        })
+      }
     }
 
     res.json({ message: 'Review submitted' })

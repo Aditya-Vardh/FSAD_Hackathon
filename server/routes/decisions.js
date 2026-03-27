@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const auth = require('../middleware/auth')
+const { sendEmail } = require('../utils/mailer')
 
 router.post('/:submissionId', auth, async (req, res) => {
   if (req.user.role !== 'editor') return res.status(403).json({ message: 'Editors only' })
@@ -90,16 +91,35 @@ router.post('/:submissionId', auth, async (req, res) => {
 
     // Notify author that a decision has been made on their paper
     const [paperRows] = await db.query(
-      'SELECT author_id FROM papers WHERE id = ?',
+      `SELECT p.id, p.title, p.author_id, u.email, u.name
+       FROM papers p
+       JOIN users u ON u.id = p.author_id
+       WHERE p.id = ?`,
       [paperId]
     )
 
     if (paperRows.length && paperRows[0].author_id) {
+      const author = paperRows[0]
+      // Database notification
       await db.query(
         `INSERT INTO notifications (user_id, message)
-         VALUES (?, 'Decision has been made on your paper')`,
-        [paperRows[0].author_id]
+         VALUES (?, ?)`,
+        [author.author_id, `Decision has been made on your paper: "${author.title}"`]
       )
+
+      // Email notification
+      if (author.email) {
+        const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
+        await sendEmail({
+          to: author.email,
+          subject: `Decision on your paper: ${author.title}`,
+          text: `Hello ${author.name},\n\nA final decision has been made on your paper "${author.title}".\n\nVerdict: ${decisionLabel}\n\nYou can view the full feedback in your Author Dashboard.`,
+          html: `<p>Hello <strong>${author.name}</strong>,</p>
+                 <p>A final decision has been made on your paper "<em>${author.title}</em>".</p>
+                 <p><strong>Verdict: ${decisionLabel}</strong></p>
+                 <p>You can view the full feedback in your Author Dashboard.</p>`
+        })
+      }
     }
 
     res.json({ message: 'Decision saved', verdict: finalDecision })

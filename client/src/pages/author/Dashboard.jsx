@@ -6,6 +6,8 @@ import { api, authHeaders, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { formatDate } from '../../lib/format'
 import Spinner from '../../components/Spinner'
+import { Trash2 } from 'lucide-react'
+
 
 export default function AuthorDashboard() {
   const { token, user } = useAuth()
@@ -27,6 +29,19 @@ export default function AuthorDashboard() {
     }
     load()
   }, [token])
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+      return
+    }
+    try {
+      await api.delete(`/api/submissions/${id}`, authHeaders(token))
+      setItems(items.filter(item => item.submission_id !== id))
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to delete submission')
+    }
+  }
+
 
   const stats = {
     total: items.length,
@@ -127,6 +142,14 @@ export default function AuthorDashboard() {
                             Submit Revision
                           </Link>
                         ) : null}
+
+                        <button
+                          onClick={() => handleDelete(row.submission_id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-600/10 text-red-600 text-xs font-semibold hover:bg-red-600 hover:text-white transition flex items-center justify-center"
+                          title="Delete Submission"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

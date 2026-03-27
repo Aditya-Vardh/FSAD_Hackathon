@@ -6,6 +6,8 @@ import { api, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import { formatDate } from '../../lib/format'
+import { Trash2 } from 'lucide-react'
+
 
 export default function EditorDashboard() {
   const { token } = useAuth()
@@ -30,6 +32,20 @@ export default function EditorDashboard() {
 
     if (token) load()
   }, [token])
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this submission and all associated records? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await api.delete(`/api/submissions/${id}`)
+      setItems(items.filter(item => item.submission_id !== id))
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to delete submission')
+    }
+  }
+
 
   const filtered = useMemo(() => {
     if (filter === 'all') return items
@@ -179,6 +195,15 @@ export default function EditorDashboard() {
                         >
                           Decide
                         </Link>
+
+                        <button
+                          onClick={() => handleDelete(row.submission_id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-600/10 text-red-600 text-xs font-semibold hover:bg-red-600 hover:text-white transition flex items-center justify-center"
+                          title="Delete Submission"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
                       </div>
                     </td>
 

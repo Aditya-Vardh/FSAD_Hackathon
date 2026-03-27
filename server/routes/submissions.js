@@ -342,4 +342,43 @@ router.post('/:id/assign', auth, async (req, res) => {
 })
 
 
+/*
+EDITOR
+Delete submission (plus all related records)
+*/
+router.delete('/:id', auth, async (req, res) => {
+  const submissionId = Number(req.params.id)
+  if (!submissionId)
+    return res.status(400).json({ message: 'Invalid submission id' })
+
+  try {
+    // 1. Get paper_id and author_id
+    const [subRows] = await db.query(
+      'SELECT s.paper_id, p.author_id FROM submissions s JOIN papers p ON p.id = s.paper_id WHERE s.id = ?',
+      [submissionId]
+    )
+    if (!subRows.length) return res.status(404).json({ message: 'Submission not found' })
+    
+    const paperId = subRows[0].paper_id
+    const paperAuthorId = subRows[0].author_id
+
+    // Only editor OR the author of the paper can delete it
+    if (req.user.role !== 'editor' && req.user.id !== paperAuthorId) {
+      return res.status(403).json({ message: 'Permission denied' })
+    }
+
+    // 2. Delete related records in order to respect constraints
+    await db.query('DELETE FROM reviews WHERE submission_id = ?', [submissionId])
+    await db.query('DELETE FROM decisions WHERE paper_id = ?', [paperId])
+    await db.query('DELETE FROM revisions WHERE paper_id = ?', [paperId])
+    await db.query('DELETE FROM submissions WHERE id = ?', [submissionId])
+    await db.query('DELETE FROM papers WHERE id = ?', [paperId])
+
+    res.json({ message: 'Submission deleted successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
 module.exports = router

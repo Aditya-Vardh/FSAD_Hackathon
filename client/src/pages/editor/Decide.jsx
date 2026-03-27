@@ -7,7 +7,7 @@ import { ExternalLink, Gavel, Loader2, AlertCircle, CheckCircle2, XCircle, FileE
 
 const VERDICTS = [
   { value: 'accepted', label: 'Accept', icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-  { value: 'revision', label: 'Revision', icon: FileEdit, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  { value: 'revision_required', label: 'Revision', icon: FileEdit, color: 'text-amber-400', bg: 'bg-amber-400/10' },
   { value: 'rejected', label: 'Reject', icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' }
 ]
 
@@ -17,6 +17,7 @@ export default function DecideSubmission() {
   const navigate = useNavigate()
 
   const [reviews, setReviews] = useState([])
+  const [paperFilePath, setPaperFilePath] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -34,8 +35,14 @@ export default function DecideSubmission() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get(`/api/submissions/${submissionId}/reviews`)
-        setReviews(res.data)
+        const [reviewsRes, submissionsRes] = await Promise.all([
+          api.get(`/api/submissions/${submissionId}/reviews`),
+          api.get(`/api/submissions`)
+        ])
+        setReviews(reviewsRes.data)
+        // Find this submission to get paper file_path
+        const sub = submissionsRes.data.find(s => String(s.submission_id) === String(submissionId))
+        if (sub?.paper?.file_path) setPaperFilePath(sub.paper.file_path)
       } catch (err) {
         setError(err?.response?.data?.message || 'Failed to load reviews')
       } finally {
@@ -44,6 +51,7 @@ export default function DecideSubmission() {
     }
     if (token) load()
   }, [submissionId, token])
+
 
   // Click outside to close standard selection
   useEffect(() => {
@@ -96,9 +104,9 @@ export default function DecideSubmission() {
               </div>
             </div>
 
-            {reviews.length > 0 && (
+            {paperFilePath && (
               <a
-                href={`http://localhost:10000/uploads/${reviews[0].paper_file_path}`}
+                href={`http://localhost:10000/uploads/${paperFilePath}`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border border-slate-700"

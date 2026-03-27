@@ -164,6 +164,20 @@ router.post('/:submissionId', auth, async (req, res) => {
       [submissionId]
     )
 
+    // Notify editor that a reviewer submitted feedback
+    const [submRows] = await db.query(
+      'SELECT editor_id FROM submissions WHERE id = ?',
+      [submissionId]
+    )
+
+    if (submRows.length && submRows[0].editor_id) {
+      await db.query(
+        `INSERT INTO notifications (user_id, message)
+         VALUES (?, 'A reviewer submitted feedback')`,
+        [submRows[0].editor_id]
+      )
+    }
+
     res.json({ message: 'Review submitted' })
   } catch (err) {
     console.error(err)

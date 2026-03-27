@@ -310,6 +310,14 @@ router.post('/:id/assign', auth, async (req, res) => {
     )
 
 
+    // Notify reviewer of new assignment
+    await db.query(
+      `INSERT INTO notifications (user_id, message)
+       VALUES (?, 'A new paper has been assigned to you for review')`,
+      [reviewerId]
+    )
+
+
     res.json({
 
       message: 'Reviewer assigned',

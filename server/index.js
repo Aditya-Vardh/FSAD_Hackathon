@@ -16,6 +16,7 @@ app.use('/api/reviews', require('./routes/reviews'))
 app.use('/api/decisions', require('./routes/decisions'))
 app.use('/api/revisions', require('./routes/revisions'))
 app.use('/api/admin', require('./routes/admin'))
+app.use('/api/notifications', require('./routes/notifications'))
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 

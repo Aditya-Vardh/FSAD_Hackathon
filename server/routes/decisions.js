@@ -88,6 +88,20 @@ router.post('/:submissionId', auth, async (req, res) => {
     await db.query('UPDATE submissions SET status = ? WHERE id = ?', ['decided', submissionId])
     await db.query('UPDATE papers SET status = ? WHERE id = ?', [paperStatus, paperId])
 
+    // Notify author that a decision has been made on their paper
+    const [paperRows] = await db.query(
+      'SELECT author_id FROM papers WHERE id = ?',
+      [paperId]
+    )
+
+    if (paperRows.length && paperRows[0].author_id) {
+      await db.query(
+        `INSERT INTO notifications (user_id, message)
+         VALUES (?, 'Decision has been made on your paper')`,
+        [paperRows[0].author_id]
+      )
+    }
+
     res.json({ message: 'Decision saved', verdict: finalDecision })
   } catch (err) {
     console.error(err)

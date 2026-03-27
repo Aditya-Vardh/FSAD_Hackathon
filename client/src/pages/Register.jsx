@@ -112,10 +112,10 @@ export default function Register() {
             }}
             className={`w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${theme === 'light' ? 'border-slate-300 bg-white text-slate-900' : 'border-white/15 bg-white/5 text-white'}`}
           >
-            <option value="author" className="text-slate-900">Author</option>
-            <option value="reviewer" className="text-slate-900">Reviewer</option>
-            <option value="editor" className="text-slate-900">Editor</option>
-            <option value="admin" className="text-slate-900">Admin</option>
+            <option value="author" className={theme === 'light' ? 'text-slate-900' : 'text-slate-900 bg-white'}>Author</option>
+            <option value="reviewer" className={theme === 'light' ? 'text-slate-900' : 'text-slate-900 bg-white'}>Reviewer</option>
+            <option value="editor" className={theme === 'light' ? 'text-slate-900' : 'text-slate-900 bg-white'}>Editor</option>
+            <option value="admin" className={theme === 'light' ? 'text-slate-900' : 'text-slate-900 bg-white'}>Admin</option>
           </select>
         </div>
 

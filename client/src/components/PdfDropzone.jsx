@@ -8,7 +8,14 @@ export default function PdfDropzone({ onFileSelected, fileName, label }) {
 
   const acceptFile = (file) => {
     if (!file) return
-    if (file.type !== 'application/pdf') return
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ]
+    if (!allowedTypes.includes(file.type)) return
     onFileSelected(file)
   }
 
@@ -51,8 +58,8 @@ export default function PdfDropzone({ onFileSelected, fileName, label }) {
             : 'border-gray-300 bg-white hover:border-[#3b82f6]/60'
         ].join(' ')}
       >
-        <div className="text-sm font-semibold text-blue-900">Drag & drop PDF</div>
-        <div className="text-xs text-slate-500 mt-1">or click to browse</div>
+        <div className="text-sm font-semibold text-blue-900">Drag & drop file</div>
+        <div className="text-xs text-slate-500 mt-1">PDF, DOCX, or PPT</div>
 
         {fileName ? (
           <div className="mt-3 text-xs text-slate-700">
@@ -64,7 +71,7 @@ export default function PdfDropzone({ onFileSelected, fileName, label }) {
       <input
         ref={inputRef}
         type="file"
-        accept="application/pdf"
+        accept=".pdf,.doc,.docx,.ppt,.pptx"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]

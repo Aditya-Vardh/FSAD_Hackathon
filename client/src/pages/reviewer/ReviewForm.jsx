@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
 import RubricSlider from '../../components/RubricSlider'
-import { api } from '../../lib/api'
+import { api, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 
@@ -97,12 +97,12 @@ export default function ReviewForm() {
               </div>
               <div className="flex items-center">
                 <a
-                  href={`http://localhost:5000/uploads/${paper.paper.file_path}`}
+                  href={`${API_BASE_URL}/uploads/${paper.paper.file_path}`}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-xl bg-[#3b82f6] text-white px-4 py-2 text-sm font-medium hover:bg-[#2563eb] transition"
                 >
-                  Open PDF
+                  View File
                 </a>
               </div>
             </div>

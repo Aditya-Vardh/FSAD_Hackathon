@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
 import StatusBadge from '../../components/StatusBadge'
-import { api } from '../../lib/api'
+import { api, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import { formatDate } from '../../lib/format'
@@ -155,25 +155,31 @@ export default function EditorDashboard() {
                       {formatDate(row.submitted_at)}
                     </td>
 
-                    <td className="px-4 py-4 flex gap-2">
+                    <td className="px-4 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href={`${API_BASE_URL}/uploads/${row.paper.file_path}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition"
+                        >
+                          View File
+                        </a>
 
-                      <a
-                        href={`http://localhost:10000/uploads/${row.paper.file_path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600"
-                      >
-                        View
-                      </a>
+                        <Link 
+                          to={`/editor/assign/${row.submission_id}`}
+                          className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
+                        >
+                          Assign
+                        </Link>
 
-                      <Link to={`/editor/assign/${row.submission_id}`}>
-                        Assign
-                      </Link>
-
-                      <Link to={`/editor/decide/${row.submission_id}`}>
-                        Decide
-                      </Link>
-
+                        <Link 
+                          to={`/editor/decide/${row.submission_id}`}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition"
+                        >
+                          Decide
+                        </Link>
+                      </div>
                     </td>
 
                   </tr>

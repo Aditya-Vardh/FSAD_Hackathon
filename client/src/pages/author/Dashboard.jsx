@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
 import StatusBadge from '../../components/StatusBadge'
-import { api, authHeaders } from '../../lib/api'
+import { api, authHeaders, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { formatDate } from '../../lib/format'
 import Spinner from '../../components/Spinner'
@@ -112,12 +112,12 @@ export default function AuthorDashboard() {
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-3">
                         <a
-                          href={`http://localhost:5000/uploads/${row.file_path}`}
+                          href={`${API_BASE_URL}/uploads/${row.file_path}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#3b82f6] hover:underline font-medium"
+                          className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
                         >
-                          View PDF
+                          View File
                         </a>
                         {row.paper_status === 'revision' ? (
                           <Link

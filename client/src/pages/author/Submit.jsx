@@ -15,7 +15,7 @@ export default function SubmitPaper() {
     e.preventDefault()
     setError('')
     if (!file) {
-      setError('Please upload a PDF manuscript.')
+      setError('Please upload a manuscript file.')
       return
     }
     setSubmitting(true)
@@ -40,7 +40,7 @@ export default function SubmitPaper() {
       <main className="md:ml-64 p-4 md:p-8">
         <div className="mb-6">
           <h1 className="text-xl md:text-2xl font-semibold text-blue-900">Submit Paper</h1>
-          <p className="text-sm text-slate-600 mt-1">Upload your manuscript PDF and provide the required metadata.</p>
+          <p className="text-sm text-slate-600 mt-1">Upload your manuscript (PDF, DOCX, PPT) and provide the required metadata.</p>
         </div>
 
         <form
@@ -82,7 +82,7 @@ export default function SubmitPaper() {
 
           <div className="pt-2">
             <PdfDropzone
-              label="Manuscript PDF"
+              label="Manuscript File"
               fileName={file?.name}
               onFileSelected={(selected) => setFile(selected)}
             />

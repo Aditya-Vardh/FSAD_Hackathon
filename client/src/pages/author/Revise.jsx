@@ -16,7 +16,7 @@ export default function RevisePaper() {
     e.preventDefault()
     setError('')
     if (!file) {
-      setError('Please upload the revised PDF.')
+      setError('Please upload the revised file.')
       return
     }
     setSubmitting(true)
@@ -56,7 +56,7 @@ export default function RevisePaper() {
           </div>
 
           <PdfDropzone
-            label="Revised Manuscript PDF"
+            label="Revised Manuscript File"
             fileName={file?.name}
             onFileSelected={(selected) => setFile(selected)}
           />

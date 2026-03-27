@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
-import { api } from '../../lib/api'
+import { api, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { ExternalLink, Gavel, Loader2, AlertCircle, CheckCircle2, XCircle, FileEdit, MessageSquare, ChevronDown, Check } from 'lucide-react'
 
@@ -106,7 +106,7 @@ export default function DecideSubmission() {
 
             {paperFilePath && (
               <a
-                href={`http://localhost:10000/uploads/${paperFilePath}`}
+                href={`${API_BASE_URL}/uploads/${paperFilePath}`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border border-slate-700"
@@ -127,7 +127,77 @@ export default function DecideSubmission() {
                   <p>Loading submission data...</p>
                 </div>
               ) : (
-                <form onSubmit={onSubmit} className="space-y-6">
+                <div className="space-y-8">
+                  {/* Reviewer Feedback Section */}
+                  {reviews.length > 0 && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+                        <MessageSquare className="w-5 h-5 text-indigo-400" />
+                        <h2 className="text-xl font-semibold text-white">Reviewer Feedback</h2>
+                      </div>
+                      
+                      <div className="grid gap-6">
+                        {reviews.map((rev, idx) => (
+                          <div key={rev.id} className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6 space-y-4">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold border border-slate-600">
+                                  {idx + 1}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-white">Reviewer {idx + 1}</div>
+                                  <div className="text-xs text-slate-500 italic">Submitted on {new Date(rev.created_at).toLocaleDateString()}</div>
+                                </div>
+                              </div>
+                              <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                                ${rev.recommendation === 'accept' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                                  rev.recommendation === 'reject' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
+                                  'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                                {rev.recommendation.replace('_', ' ')}
+                              </div>
+                            </div>
+
+                            {/* Rubric Scores */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 pt-2">
+                              {[
+                                { label: 'Originality', value: rev.originality },
+                                { label: 'Methodology', value: rev.methodology },
+                                { label: 'Clarity', value: rev.clarity },
+                                { label: 'Significance', value: rev.significance }
+                              ].map(score => (
+                                <div key={score.label} className="space-y-1.5">
+                                  <div className="flex justify-between text-xs font-medium">
+                                    <span className="text-slate-400">{score.label}</span>
+                                    <span className="text-indigo-400">{score.value}/5</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 transition-all duration-500" 
+                                      style={{ width: `${(score.value / 5) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Comments */}
+                            {rev.comments && (
+                              <div className="pt-4 mt-4 border-t border-slate-700/50">
+                                <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Reviewer Comments</div>
+                                <p className="text-sm text-slate-300 leading-relaxed italic">
+                                  "{rev.comments}"
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <hr className="border-slate-800" />
+
+                  <form onSubmit={onSubmit} className="space-y-6">
                   
                   {/* Verdict Select */}
                   <div className="space-y-2">
@@ -250,8 +320,9 @@ export default function DecideSubmission() {
                   </div>
 
                 </form>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
           </div>
         </div>
       </main>

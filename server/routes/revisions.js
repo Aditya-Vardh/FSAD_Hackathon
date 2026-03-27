@@ -22,7 +22,7 @@ router.post('/:submissionId', auth, upload.single('file'), async (req, res) => {
   }
 
   const responseLetter = req.body.response_letter ?? req.body.responseLetter ?? null
-  if (!req.file) return res.status(400).json({ message: 'Revised PDF file is required' })
+  if (!req.file) return res.status(400).json({ message: 'Revised manuscript file is required' })
   if (!responseLetter || String(responseLetter).trim().length === 0) {
     return res.status(400).json({ message: 'response_letter is required' })
   }

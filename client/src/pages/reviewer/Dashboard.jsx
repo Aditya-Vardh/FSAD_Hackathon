@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
 import StatusBadge from '../../components/StatusBadge'
-import { api } from '../../lib/api'
+import { api, API_BASE_URL } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import Spinner from '../../components/Spinner'
 import { formatDate } from '../../lib/format'
@@ -66,17 +66,17 @@ export default function ReviewerDashboard() {
 
               <p className="text-sm text-slate-600 mt-3 line-clamp-4">{row.paper.abstract}</p>
 
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <a
-                  href={`http://localhost:5000/uploads/${row.paper.file_path}`}
+                  href={`${API_BASE_URL}/uploads/${row.paper.file_path}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium text-[#3b82f6] hover:underline"
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition"
                 >
-                  View PDF
+                  View File
                 </a>
                 <Link
-                  className="text-sm font-medium text-[#3b82f6] hover:underline"
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
                   to={`/reviewer/review/${row.submission_id}`}
                 >
                   {row.review.recommendation ? 'Edit Review' : 'Submit Review'}

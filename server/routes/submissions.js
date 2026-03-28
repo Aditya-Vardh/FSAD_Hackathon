@@ -2,6 +2,8 @@ const express = require('express')
 const router = express.Router()
 const db = require('../db')
 const auth = require('../middleware/auth')
+const { sendEmail } = require('../utils/mailer')
+
 
 
 /*
@@ -316,6 +318,21 @@ router.post('/:id/assign', auth, async (req, res) => {
        VALUES (?, 'A new paper has been assigned to you for review')`,
       [reviewerId]
     )
+
+    // Send email to reviewer
+    const [revRows] = await db.query('SELECT name, email FROM users WHERE id = ?', [reviewerId])
+    if (revRows.length && revRows[0].email) {
+      const reviewer = revRows[0]
+      await sendEmail({
+        to: reviewer.email,
+        subject: 'New Paper Assigned for Review',
+        text: `Hello ${reviewer.name},\n\nA new paper has been assigned to you for review (Submission ID: #${submissionId}).\n\nPlease log in to the Peer Review System to access the manuscript and submit your feedback.`,
+        html: `<p>Hello <strong>${reviewer.name}</strong>,</p>
+               <p>A new paper has been assigned to you for review (Submission ID: #${submissionId}).</p>
+               <p>Please log in to the Peer Review System to access the manuscript and submit your feedback.</p>`
+      })
+    }
+
 
 
     res.json({

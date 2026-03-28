@@ -122,6 +122,41 @@ router.post('/:submissionId', auth, async (req, res) => {
       }
     }
 
+    // NEW: Notify reviewers of the final decision
+    const [reviewerRows] = await db.query(
+      `SELECT rv.reviewer_id, u.email, u.name, p.title
+       FROM reviews rv
+       JOIN users u ON u.id = rv.reviewer_id
+       JOIN submissions s ON s.id = rv.submission_id
+       JOIN papers p ON p.id = s.paper_id
+       WHERE s.id = ?`,
+      [submissionId]
+    )
+
+    for (const rev of reviewerRows) {
+      // Database notification
+      await db.query(
+        `INSERT INTO notifications (user_id, message)
+         VALUES (?, ?)`,
+        [rev.reviewer_id, `A final decision has been made on the paper you reviewed: "${rev.title}"`]
+      )
+
+      // Email notification
+      if (rev.email) {
+        const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
+        await sendEmail({
+          to: rev.email,
+          subject: `Final Decision: ${rev.title}`,
+          text: `Hello ${rev.name},\n\nA final decision has been made on the paper "${rev.title}" which you reviewed.\n\nVerdict: ${decisionLabel}\n\nThank you for your contribution to the peer review process.`,
+          html: `<p>Hello <strong>${rev.name}</strong>,</p>
+                 <p>A final decision has been made on the paper "<em>${rev.title}</em>" which you reviewed.</p>
+                 <p><strong>Verdict: ${decisionLabel}</strong></p>
+                 <p>Thank you for your contribution to the peer review process.</p>`
+        })
+      }
+    }
+
+
     res.json({ message: 'Decision saved', verdict: finalDecision })
   } catch (err) {
     console.error(err)

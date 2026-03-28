@@ -4,6 +4,8 @@ const multer = require('multer')
 const path = require('path')
 const db = require('../db')
 const auth = require('../middleware/auth')
+const { sendEmail } = require('../utils/mailer')
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
@@ -74,7 +76,40 @@ router.post('/:submissionId', auth, upload.single('file'), async (req, res) => {
     // Re-open the submission for reviewers.
     await db.query('UPDATE submissions SET status = ? WHERE id = ?', ['assigned', submissionId])
 
+    // Notify editor that a revision has been submitted
+    const [subRows] = await db.query(
+      `SELECT s.id, s.editor_id, u.email, u.name, p.title
+       FROM submissions s
+       JOIN users u ON u.id = s.editor_id
+       JOIN papers p ON p.id = s.paper_id
+       WHERE s.id = ?`,
+      [submissionId]
+    )
+
+    if (subRows.length && subRows[0].editor_id) {
+      const editor = subRows[0]
+      // Database notification
+      await db.query(
+        `INSERT INTO notifications (user_id, message)
+         VALUES (?, ?)`,
+        [editor.editor_id, `A revision has been submitted for "${editor.title}"`]
+      )
+
+      // Email notification
+      if (editor.email) {
+        await sendEmail({
+          to: editor.email,
+          subject: 'Revision Submitted',
+          text: `Hello ${editor.name},\n\nThe author has submitted a revised manuscript for the paper "${editor.title}" (Submission ID: #${submissionId}).\n\nYou can view the revision in the Editor Dashboard.`,
+          html: `<p>Hello <strong>${editor.name}</strong>,</p>
+                 <p>The author has submitted a revised manuscript for the paper "<em>${editor.title}</em>" (Submission ID: #${submissionId}).</p>
+                 <p>You can view the revision in the Editor Dashboard.</p>`
+        })
+      }
+    }
+
     res.json({ message: 'Revision submitted' })
+
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message })
   }

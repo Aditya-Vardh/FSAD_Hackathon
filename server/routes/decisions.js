@@ -89,6 +89,9 @@ router.post('/:submissionId', auth, async (req, res) => {
     await db.query('UPDATE submissions SET status = ? WHERE id = ?', ['decided', submissionId])
     await db.query('UPDATE papers SET status = ? WHERE id = ?', [paperStatus, paperId])
 
+    console.log(`[Decision] Submission #${submissionId} verdict: ${finalDecision}. Database updated.`)
+
+
     // Notify author that a decision has been made on their paper
     const [paperRows] = await db.query(
       `SELECT p.id, p.title, p.author_id, u.email, u.name
@@ -107,10 +110,10 @@ router.post('/:submissionId', auth, async (req, res) => {
         [author.author_id, `Decision has been made on your paper: "${author.title}"`]
       )
 
-      // Email notification
+      // Email notification (non-blocking)
       if (author.email) {
         const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
-        await sendEmail({
+        sendEmail({
           to: author.email,
           subject: `Decision on your paper: ${author.title}`,
           text: `Hello ${author.name},\n\nA final decision has been made on your paper "${author.title}".\n\nVerdict: ${decisionLabel}\n\nYou can view the full feedback in your Author Dashboard.`,
@@ -118,9 +121,11 @@ router.post('/:submissionId', auth, async (req, res) => {
                  <p>A final decision has been made on your paper "<em>${author.title}</em>".</p>
                  <p><strong>Verdict: ${decisionLabel}</strong></p>
                  <p>You can view the full feedback in your Author Dashboard.</p>`
-        })
+        }).then(() => console.log(`[Notification] Decision email sent to author: ${author.email}`))
+          .catch(err => console.error(`[Notification] Failed to notify author: ${author.email}`, err))
       }
     }
+
 
     // NEW: Notify reviewers of the final decision
     const [reviewerRows] = await db.query(
@@ -141,10 +146,10 @@ router.post('/:submissionId', auth, async (req, res) => {
         [rev.reviewer_id, `A final decision has been made on the paper you reviewed: "${rev.title}"`]
       )
 
-      // Email notification
+      // Email notification (non-blocking)
       if (rev.email) {
         const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
-        await sendEmail({
+        sendEmail({
           to: rev.email,
           subject: `Final Decision: ${rev.title}`,
           text: `Hello ${rev.name},\n\nA final decision has been made on the paper "${rev.title}" which you reviewed.\n\nVerdict: ${decisionLabel}\n\nThank you for your contribution to the peer review process.`,
@@ -152,9 +157,11 @@ router.post('/:submissionId', auth, async (req, res) => {
                  <p>A final decision has been made on the paper "<em>${rev.title}</em>" which you reviewed.</p>
                  <p><strong>Verdict: ${decisionLabel}</strong></p>
                  <p>Thank you for your contribution to the peer review process.</p>`
-        })
+        }).then(() => console.log(`[Notification] Decision email sent to reviewer: ${rev.email}`))
+          .catch(err => console.error(`[Notification] Failed to notify reviewer: ${rev.email}`, err))
       }
     }
+
 
 
     res.json({ message: 'Decision saved', verdict: finalDecision })

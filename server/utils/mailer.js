@@ -8,8 +8,11 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s/g, '') : undefined
-  }
+  },
+  // Force IPv4 to avoid ENETUNREACH on Railway/Cloud
+  family: 4
 })
+
 
 
 /**

@@ -8,11 +8,19 @@ const db = require('../db')
 router.post('/register', async (req, res) => {
   const { name, email, password, role } = req.body
   try {
+    // Check if user already exists
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email])
+    if (existing.length) {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+
+
     const hash = await bcrypt.hash(password, 10)
     await db.query(
       'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
       [name, email, hash, role]
     )
+
     res.json({ message: 'Registered successfully' })
   } catch (err) {
     console.error('REGISTER ERROR:', err)
@@ -22,9 +30,8 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  console.log("JWT_SECRET =", process.env.JWT_SECRET)
-
   const { email, password } = req.body
+
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email])
     if (!rows.length) return res.status(400).json({ message: 'User not found' })

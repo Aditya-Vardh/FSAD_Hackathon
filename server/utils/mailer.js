@@ -21,9 +21,10 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEmail({ to, subject, text, html }) {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('Mailer: SMTP credentials not set. Email not sent.')
+    console.warn('Mailer: SMTP credentials (SMTP_USER/SMTP_PASS) are missing from environment variables. Email notifications will be skipped.')
     return
   }
+
 
   try {
     const info = await transporter.sendMail({

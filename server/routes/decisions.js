@@ -112,8 +112,8 @@ router.post('/:submissionId', auth, async (req, res) => {
 
       // Email notification (non-blocking)
       if (author.email) {
-        const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
-        sendEmail({
+        const decisionLabel = finalDecision.replace(/_/g, ' ').toUpperCase()
+        const emailResult = await sendEmail({
           to: author.email,
           subject: `Decision on your paper: ${author.title}`,
           text: `Hello ${author.name},\n\nA final decision has been made on your paper "${author.title}".\n\nVerdict: ${decisionLabel}\n\nYou can view the full feedback in your Author Dashboard.`,
@@ -121,8 +121,13 @@ router.post('/:submissionId', auth, async (req, res) => {
                  <p>A final decision has been made on your paper "<em>${author.title}</em>".</p>
                  <p><strong>Verdict: ${decisionLabel}</strong></p>
                  <p>You can view the full feedback in your Author Dashboard.</p>`
-        }).then(() => console.log(`[Notification] Decision email sent to author: ${author.email}`))
-          .catch(err => console.error(`[Notification] Failed to notify author: ${author.email}`, err))
+        })
+
+        if (emailResult?.messageId) {
+          console.log(`[Notification] Decision email sent to author: ${author.email}`)
+        } else if (emailResult?.skipped) {
+          console.warn(`[Notification] Author email skipped for ${author.email}: ${emailResult.reason}`)
+        }
       }
     }
 
@@ -148,7 +153,7 @@ router.post('/:submissionId', auth, async (req, res) => {
 
       // Email notification (non-blocking)
       if (rev.email) {
-        const decisionLabel = finalDecision.replace('_', ' ').toUpperCase()
+        const decisionLabel = finalDecision.replace(/_/g, ' ').toUpperCase()
         sendEmail({
           to: rev.email,
           subject: `Final Decision: ${rev.title}`,

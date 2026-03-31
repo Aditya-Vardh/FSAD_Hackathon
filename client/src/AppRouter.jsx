@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -29,6 +30,7 @@ export default function AppRouter() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
+          <Analytics />
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/login" element={<Login />} />
@@ -117,4 +119,3 @@ export default function AppRouter() {
     </BrowserRouter>
   )
 }
-

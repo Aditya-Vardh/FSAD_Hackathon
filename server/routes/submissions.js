@@ -4,392 +4,173 @@ const db = require('../db')
 const auth = require('../middleware/auth')
 const { sendEmail } = require('../utils/mailer')
 
-
-
-/*
-EDITOR
-List reviewers for assignment dropdown
-*/
 router.get('/reviewers', auth, async (req, res) => {
-
   if (req.user.role !== 'editor')
     return res.status(403).json({ message: 'Editors only' })
 
   try {
-
-    const [rows] = await db.query(
-      `SELECT id, name, email
-       FROM users
-       WHERE role = ?
-       ORDER BY name ASC`,
+    const result = await db.query(
+      `SELECT id, name, email FROM users WHERE role = $1 ORDER BY name ASC`,
       ['reviewer']
     )
-
-    res.json(rows)
-
+    res.json(result.rows)
   } catch (err) {
-
     console.error(err)
-
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-
-/*
-AUTHOR
-List my submissions
-*/
 router.get('/mine', auth, async (req, res) => {
-
   if (req.user.role !== 'author')
     return res.status(403).json({ message: 'Authors only' })
 
   try {
-
-    const [rows] = await db.query(
-
-      `
-      SELECT
-        s.id AS submission_id,
-        s.status,
-        s.submitted_at,
-
-        p.id AS paper_id,
-        p.title,
-        p.abstract,
-        p.keywords,
-        p.file_path,
-        p.status AS paper_status
-
-      FROM submissions s
-
-      JOIN papers p
-        ON p.id = s.paper_id
-
-      WHERE p.author_id = ?
-
-      ORDER BY s.submitted_at DESC
-      `,
-
+    const result = await db.query(
+      `SELECT
+        s.id AS submission_id, s.status, s.submitted_at,
+        p.id AS paper_id, p.title, p.abstract, p.keywords, p.file_path, p.status AS paper_status
+       FROM submissions s
+       JOIN papers p ON p.id = s.paper_id
+       WHERE p.author_id = $1
+       ORDER BY s.submitted_at DESC`,
       [req.user.id]
     )
-
-    res.json(rows)
-
+    res.json(result.rows)
   } catch (err) {
-
     console.error(err)
-
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-
-/*
-EDITOR
-List all submissions
-*/
 router.get('/', auth, async (req, res) => {
-
   if (req.user.role !== 'editor')
     return res.status(403).json({ message: 'Editors only' })
 
   try {
-
-    const [rows] = await db.query(
-
-      `
-      SELECT
-
-        s.id AS submission_id,
-        s.submitted_at,
-
-        p.id AS paper_id,
-        p.title,
-        p.status,
-        p.keywords,
-        p.file_path,
-
-        u.id AS author_id,
-        u.name AS author_name,
-
-        rv.reviewer_id,
-        ru.name AS reviewer_name
-
-      FROM submissions s
-
-      JOIN papers p
-        ON s.paper_id = p.id
-
-      JOIN users u
-        ON p.author_id = u.id
-
-      LEFT JOIN reviews rv
-        ON rv.submission_id = s.id
-
-      LEFT JOIN users ru
-        ON rv.reviewer_id = ru.id
-
-      ORDER BY s.submitted_at DESC
-      `
+    const result = await db.query(
+      `SELECT
+        s.id AS submission_id, s.submitted_at,
+        p.id AS paper_id, p.title, p.status, p.keywords, p.file_path,
+        u.id AS author_id, u.name AS author_name,
+        rv.reviewer_id, ru.name AS reviewer_name
+       FROM submissions s
+       JOIN papers p ON s.paper_id = p.id
+       JOIN users u ON p.author_id = u.id
+       LEFT JOIN reviews rv ON rv.submission_id = s.id
+       LEFT JOIN users ru ON rv.reviewer_id = ru.id
+       ORDER BY s.submitted_at DESC`
     )
 
-
-    const formatted = rows.map(row => ({
-
+    const formatted = result.rows.map(row => ({
       submission_id: row.submission_id,
-
       submitted_at: row.submitted_at,
-
-
-      paper: {
-        id: row.paper_id,
-        title: row.title,
-        status: row.status,
-        keywords: row.keywords,
-        file_path: row.file_path
-      },
-
-
-      author: {
-        id: row.author_id,
-        name: row.author_name
-      },
-
-
-      assigned_reviewers:
-        row.reviewer_name
-          ? [{ reviewer_name: row.reviewer_name }]
-          : []
-
+      paper: { id: row.paper_id, title: row.title, status: row.status, keywords: row.keywords, file_path: row.file_path },
+      author: { id: row.author_id, name: row.author_name },
+      assigned_reviewers: row.reviewer_name ? [{ reviewer_name: row.reviewer_name }] : []
     }))
 
-
     res.json(formatted)
-
   } catch (err) {
-
     console.error(err)
-
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-
-/*
-EDITOR
-Get completed reviews for a submission
-*/
 router.get('/:id/reviews', auth, async (req, res) => {
-
   if (req.user.role !== 'editor')
     return res.status(403).json({ message: 'Editors only' })
 
   const submissionId = Number(req.params.id)
-
-  if (!submissionId)
-    return res.status(400).json({ message: 'Invalid submission id' })
-
+  if (!submissionId) return res.status(400).json({ message: 'Invalid submission id' })
 
   try {
-
-    const [rows] = await db.query(
-
-      `
-      SELECT
-
-        rv.id,
-        rv.submission_id,
-        rv.reviewer_id,
-
-        u.name AS reviewer_name,
-
-        rv.originality,
-        rv.methodology,
-        rv.clarity,
-        rv.significance,
-        rv.recommendation,
-        rv.comments,
-        rv.created_at
-
-      FROM reviews rv
-
-      JOIN users u
-        ON u.id = rv.reviewer_id
-
-      WHERE rv.submission_id = ?
-
-      ORDER BY rv.created_at DESC
-      `,
-
+    const result = await db.query(
+      `SELECT rv.id, rv.submission_id, rv.reviewer_id, u.name AS reviewer_name,
+              rv.originality, rv.methodology, rv.clarity, rv.significance,
+              rv.recommendation, rv.comments, rv.created_at
+       FROM reviews rv
+       JOIN users u ON u.id = rv.reviewer_id
+       WHERE rv.submission_id = $1
+       ORDER BY rv.created_at DESC`,
       [submissionId]
     )
-
-
-    res.json(rows)
-
+    res.json(result.rows)
   } catch (err) {
-
     console.error(err)
-
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-
-/*
-EDITOR
-Assign reviewer
-*/
 router.post('/:id/assign', auth, async (req, res) => {
-
   if (req.user.role !== 'editor')
     return res.status(403).json({ message: 'Editors only' })
-
 
   const submissionId = Number(req.params.id)
   const reviewerId = Number(req.body.reviewer_id)
-
-
-  if (!submissionId || !reviewerId)
-    return res.status(400).json({ message: 'Invalid input' })
-
+  if (!submissionId || !reviewerId) return res.status(400).json({ message: 'Invalid input' })
 
   try {
-
-    const [existing] = await db.query(
-
-      `
-      SELECT id
-      FROM reviews
-      WHERE submission_id = ?
-      AND reviewer_id = ?
-      `,
-
+    const existing = await db.query(
+      `SELECT id FROM reviews WHERE submission_id = $1 AND reviewer_id = $2`,
       [submissionId, reviewerId]
     )
+    if (existing.rows.length)
+      return res.status(400).json({ message: 'Reviewer already assigned' })
 
-
-    if (existing.length)
-      return res.status(400).json({
-        message: 'Reviewer already assigned'
-      })
-
-
-    const [review] = await db.query(
-
-      `
-      INSERT INTO reviews (submission_id, reviewer_id)
-      VALUES (?, ?)
-      `,
-
+    const review = await db.query(
+      `INSERT INTO reviews (submission_id, reviewer_id) VALUES ($1, $2) RETURNING id`,
       [submissionId, reviewerId]
     )
-
 
     await db.query(
-
-      `
-      UPDATE submissions
-      SET editor_id = ?, status = 'assigned'
-      WHERE id = ?
-      `,
-
+      `UPDATE submissions SET editor_id = $1, status = 'assigned' WHERE id = $2`,
       [req.user.id, submissionId]
     )
 
-
-    // Notify reviewer of new assignment
     await db.query(
-      `INSERT INTO notifications (user_id, message)
-       VALUES (?, 'A new paper has been assigned to you for review')`,
+      `INSERT INTO notifications (user_id, message) VALUES ($1, 'A new paper has been assigned to you for review')`,
       [reviewerId]
     )
 
-    // Send email to reviewer
-    const [revRows] = await db.query('SELECT name, email FROM users WHERE id = ?', [reviewerId])
-    if (revRows.length && revRows[0].email) {
-      const reviewer = revRows[0]
+    const revResult = await db.query('SELECT name, email FROM users WHERE id = $1', [reviewerId])
+    if (revResult.rows.length && revResult.rows[0].email) {
+      const reviewer = revResult.rows[0]
       await sendEmail({
         to: reviewer.email,
         subject: 'New Paper Assigned for Review',
-        text: `Hello ${reviewer.name},\n\nA new paper has been assigned to you for review (Submission ID: #${submissionId}).\n\nPlease log in to the Peer Review System to access the manuscript and submit your feedback.`,
-        html: `<p>Hello <strong>${reviewer.name}</strong>,</p>
-               <p>A new paper has been assigned to you for review (Submission ID: #${submissionId}).</p>
-               <p>Please log in to the Peer Review System to access the manuscript and submit your feedback.</p>`
+        text: `Hello ${reviewer.name},\n\nA new paper has been assigned to you for review (Submission ID: #${submissionId}).`,
+        html: `<p>Hello <strong>${reviewer.name}</strong>,</p><p>A new paper has been assigned to you for review (Submission ID: #${submissionId}).</p>`
       })
     }
 
-
-
-    res.json({
-
-      message: 'Reviewer assigned',
-
-      assignment: {
-        submission_id: submissionId,
-        reviewer_id: reviewerId,
-        review_id: review.insertId
-      }
-
-    })
-
+    res.json({ message: 'Reviewer assigned', assignment: { submission_id: submissionId, reviewer_id: reviewerId, review_id: review.rows[0].id } })
   } catch (err) {
-
     console.error(err)
-
-    res.status(500).json({
-      message: 'Server error',
-      error: err.message
-    })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
-
-/*
-EDITOR
-Delete submission (plus all related records)
-*/
 router.delete('/:id', auth, async (req, res) => {
   const submissionId = Number(req.params.id)
-  if (!submissionId)
-    return res.status(400).json({ message: 'Invalid submission id' })
+  if (!submissionId) return res.status(400).json({ message: 'Invalid submission id' })
 
   try {
-    // 1. Get paper_id and author_id
-    const [subRows] = await db.query(
-      'SELECT s.paper_id, p.author_id FROM submissions s JOIN papers p ON p.id = s.paper_id WHERE s.id = ?',
+    const subResult = await db.query(
+      'SELECT s.paper_id, p.author_id FROM submissions s JOIN papers p ON p.id = s.paper_id WHERE s.id = $1',
       [submissionId]
     )
-    if (!subRows.length) return res.status(404).json({ message: 'Submission not found' })
-    
-    const paperId = subRows[0].paper_id
-    const paperAuthorId = subRows[0].author_id
+    if (!subResult.rows.length) return res.status(404).json({ message: 'Submission not found' })
 
-    // Only editor OR the author of the paper can delete it
-    if (req.user.role !== 'editor' && req.user.id !== paperAuthorId) {
+    const { paper_id: paperId, author_id: paperAuthorId } = subResult.rows[0]
+
+    if (req.user.role !== 'editor' && req.user.id !== paperAuthorId)
       return res.status(403).json({ message: 'Permission denied' })
-    }
 
-    // 2. Delete related records in order to respect constraints
-    await db.query('DELETE FROM reviews WHERE submission_id = ?', [submissionId])
-    await db.query('DELETE FROM decisions WHERE paper_id = ?', [paperId])
-    await db.query('DELETE FROM revisions WHERE paper_id = ?', [paperId])
-    await db.query('DELETE FROM submissions WHERE id = ?', [submissionId])
-    await db.query('DELETE FROM papers WHERE id = ?', [paperId])
+    await db.query('DELETE FROM reviews WHERE submission_id = $1', [submissionId])
+    await db.query('DELETE FROM decisions WHERE paper_id = $1', [paperId])
+    await db.query('DELETE FROM revisions WHERE paper_id = $1', [paperId])
+    await db.query('DELETE FROM submissions WHERE id = $1', [submissionId])
+    await db.query('DELETE FROM papers WHERE id = $1', [paperId])
 
     res.json({ message: 'Submission deleted successfully' })
   } catch (err) {

@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const db = require('../db')
 
+const JWT_SECRET = process.env.JWT_SECRET || 'peer_review_jwt_fallback_secret_2024'
+
 router.post('/register', async (req, res) => {
   const { name, email, password, role } = req.body
   try {
@@ -33,13 +35,13 @@ router.post('/login', async (req, res) => {
     if (!valid) return res.status(400).json({ message: 'Wrong password' })
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' }
     )
     res.json({ token, user: { id: user.id, name: user.name, role: user.role } })
   } catch (err) {
-    console.error('LOGIN ERROR:', err)
-    res.status(500).json({ message: 'Server error' })
+    console.error('LOGIN ERROR:', err.message, err.stack)
+    res.status(500).json({ message: 'Server error', detail: err.message })
   }
 })
 

@@ -3,22 +3,6 @@ const router = express.Router()
 const db = require('../db')
 const auth = require('../middleware/auth')
 
-;(async () => {
-  try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id         SERIAL PRIMARY KEY,
-        user_id    INT NOT NULL,
-        message    TEXT NOT NULL,
-        is_read    BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `)
-  } catch (err) {
-    console.error('Failed to create notifications table:', err.message)
-  }
-})()
-
 router.get('/:userId', auth, async (req, res) => {
   const userId = Number(req.params.userId)
   if (!userId) return res.status(400).json({ message: 'Invalid user id' })

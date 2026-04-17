@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 
 const express = require('express')
 const cors = require('cors')
+const initDb = require('./initdb')
 
 const app = express()
 
@@ -26,6 +27,13 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 10000
 
-app.listen(PORT, () => {
-  console.log(`Server on port ${PORT}`)
-})
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server on port ${PORT}`)
+    })
+  })
+  .catch((err) => {
+    console.error('[initdb] Failed to initialize database:', err)
+    process.exit(1)
+  })
